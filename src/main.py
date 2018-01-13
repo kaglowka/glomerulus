@@ -1,7 +1,7 @@
 from glomerulus.io import FileStorage
-from glomerulus.search.pws_clone import Google
+from glomerulus.search.search import get_links_for_keywords
 
 # Example search
-# results = Google.search(query='papierosy dla dzieci', num=5, start=2, country_code="pl")
+get_links_for_keywords('dzieci papierosy')
 
 
