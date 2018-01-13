@@ -116,10 +116,9 @@ class Google:
 
     @staticmethod
     def scrape_search_result(soup):
-        raw_results = soup.find_all('li', attrs = {'class' : 'g'})
+        raw_results = soup.find_all('div', attrs = {'class' : 'g'})
         results = []
 
-        print ()
         for result in raw_results:
             link = result.find('a').get('href')[7:]
 
