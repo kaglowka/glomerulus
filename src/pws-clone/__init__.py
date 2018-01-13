@@ -1,2 +1,2 @@
-from pws.google import Google
-from pws.bing import Bing
+from .google import Google
+from .bing import Bing
