@@ -28,63 +28,72 @@ class LinksSpider(scrapy.Spider):
         # Extract structured data and return a dictionary of values to save/use
         #print("TUTAJ: " + response.css('title::text').extract_first())
         #return [{'xyz': 'sdff'}]
-        self.get_paragraphs2(response)
+        self.get_content(response)
 
 
-    def get_paragraphs2(self, response):
-        article = response.css('article')[0]
-        content = "ARTYKUŁ: "
+    def get_content(self, response):
 
+        '''
+
+        possible upgrades: get content  from e.i. <p> <strong> blabla </strong><p>
+        '''
+
+        # Indentify main container
+        article = self.extract_main_container(response)
+
+        # We get all p inside main_container
         all_pars = article.xpath('.//p/text()').extract()
-        comment_pars = article.css('section[id*="comments"] p::text').extract()
 
-        content += "\n TREŚĆ --- \n"
+        # Extract all p likely to be comments inside main_container
+        comment_pars = self.extract_comments_inside_main(article)
+
+        # Remove comments from main_container
+        content_pars = self.remove_elements(all_pars, comment_pars)
+
+        #Generate data to write
+        content = ""
+        content += "\n CAŁY ARTYKUŁ --- \n"
         for p in all_pars:
             content += p
         content += "\n KOMENTARZE --- \n"
         for p in comment_pars:
             content += p
-
-        content_pars = []
         content += "\n KONTENT --- \n"
-        for par in all_pars:
-            for comment_par in comment_pars:
-                is_comment = False
-                if par == comment_par:
-                    is_comment = True
-                    break
-            if is_comment == False:
-                content_pars.append(par)
-                content += par
+        for par in content_pars:
+            content+=par
 
         FileStorage().save_data('article', content)
 
-    def get_paragraphs(self, response):
-        article = response.css('article')[0]
-        content = "ARTYKUŁ: "
-        for p in article.xpath('.//p/text()').extract():
-            content += p
-        all_pars = []
-        comment_pars = []
 
-        content += "\n TREŚĆ --- \n"
-        for p in article.xpath('.//p/text()').extract():
-            all_pars.append(p)
-            content += p
-        content += "\n KOMENTARZE --- \n"
-        for p in article.css('section[id*="comments"] p::text').extract():
-            comment_pars.append(p)
-            content += p
-        content_pars = []
-        content += "\n KONTENT --- \n"
-        for par in all_pars:
-            for comment_par in comment_pars:
-                is_comment = False
-                if par == comment_par:
-                    is_comment = True
+    def extract_main_container(self, response):
+
+        '''
+        possible upgrades: class*="post"  "post-content", "main-content"
+        '''
+
+        main_container = ['no main container']
+        if len(response.css('article')) > 0:
+            main_container = response.css('article')[0]
+        elif len(response.css('div[id*="post"]')) > 0:
+            main_container = response.css('div[id*="post"]')[0]
+        # elif len(response.css('div[class*="post"]')) > 0:
+        #     main_container = response.css('div[id*="post"]')[0]
+        return main_container
+
+
+    def extract_comments_inside_main(self, main_container):
+        return main_container.css('*[id*="comments"] p::text').extract()
+
+
+    def remove_elements(self, all_elements, trash_elements):
+        return_elements = []
+        for el in all_elements:
+            is_trash = False
+            for trash in trash_elements:
+                is_trash = False
+                if el == trash:
+                    is_trash = True
                     break
-            if is_comment == False:
-                content_pars.append(par)
-                content += par
-
-        FileStorage().save_data('article', content)
+            if is_trash == False:
+                return_elements.append(el)
+        return return_elements
