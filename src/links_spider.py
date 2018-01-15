@@ -38,10 +38,10 @@ class LinksSpider(scrapy.Spider):
             ('content', article_content),
             ('comments', article_comments)]
         )
-        self.save_article_data(data)
+        #self.save_readable_article_data(data)
+        return data
 
-
-    def save_article_data(self, data):
+    def save_readable_article_data(self, data):
         # Should be somewhere else? TODO better?
         str = ""
         for key, val in data.items():
