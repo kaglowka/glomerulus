@@ -38,7 +38,7 @@ class LinksSpider(scrapy.Spider):
             ('content', article_content),
             ('comments', article_comments)]
         )
-        #self.save_readable_article_data(data)
+        self.save_readable_article_data(data)
         return data
 
     def save_readable_article_data(self, data):
@@ -48,7 +48,7 @@ class LinksSpider(scrapy.Spider):
             str += (key + ": " + val)
             str += "\n"
         str += "\n"
-        FileStorage().save_data('first-data', str, flag='a')
+        FileStorage().save_data('readable-article-data', str, flag='a')
 
 
     def get_content(self, response):
@@ -81,6 +81,7 @@ class LinksSpider(scrapy.Spider):
 
 
 
+
     def extract_main_container(self, response):
 
         # 1st rule -- get 1st article element
@@ -88,17 +89,20 @@ class LinksSpider(scrapy.Spider):
         # 3rd rule -- get 1st div whose id attribute value contains "post" (for blogs)
         # backup -- get body element
 
-        if len(response.css('article')) > 0:
-            main_container = response.css('article')[0]
-        elif len(response.css('div[class*="article"]')) > 0:
-            main_container = response.css('div[class*="article"]')[0]
-        elif len(response.css('div[id*="post"]')) > 0:
-            main_container = response.css('div[id*="post"]')[0]
-        # elif len(response.css('div[class*="post"]')) > 0:
-        #     main_container = response.css('div[id*="post"]')[0]
-        else:
-            main_container = response.css('body')[0]
-        return main_container
+        candidate = response.css('article')
+        if len(candidate) > 0:
+            return candidate[0]
+
+        candidate = response.css('div[class*="article"]')
+        if len(candidate) > 0:
+            return candidate[0]
+
+        candidate = response.css('div[id*="post"]')
+        if len(candidate) > 0:
+            return candidate[0]
+
+        candidate = response.css('body')[0]
+        return candidate
 
 
 
@@ -131,11 +135,8 @@ class LinksSpider(scrapy.Spider):
         return_elements = []
         for el in all_elements:
             is_trash = False
-            for trash in trash_elements:
-                is_trash = False
-                if el == trash:
-                    is_trash = True
-                    break
-            if is_trash == False:
+            if el in trash_elements:
+                is_trash = True
+            if not is_trash:
                 return_elements.append(el)
         return return_elements
