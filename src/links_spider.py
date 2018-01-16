@@ -109,17 +109,18 @@ class LinksSpider(scrapy.Spider):
     def extract_main_content(self, main_container):
         content = []
 
-        # Get text form all p inside main container
-        all_p = main_container.xpath('.//p')
-        for p in all_p:
-            if p.css('::text').extract_first() is not None:
-                content.append(p.css('::text').extract_first())
+        # Get text form every p (and its every child) inside main container
+        all_p_texts = main_container.css('p *::text').extract()
+        for p_text in all_p_texts:
+            if len(p_text) > 1:
+                content.append(p_text)
+
 
         # Get texts longer than 25 chars form all divs inside main container
         all_divs_texts = main_container.css('div::text').extract()
         for div_text in all_divs_texts:
             if len(div_text) > 25:
-                print(div_text)
+                div_text = div_text.strip() #remove whitespaces
                 content.append(div_text)
         return content
 
