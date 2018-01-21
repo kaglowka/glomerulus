@@ -4,6 +4,9 @@ import csv
 class FileStorage:
     data_path = '../data'
 
+    def get_data_path(self):
+        return self.data_path
+
     def get_data(self, name):
         return open(os.path.join(self.data_path, name), 'r', encoding='utf-8')
 

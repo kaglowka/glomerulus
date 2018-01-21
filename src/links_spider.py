@@ -7,19 +7,19 @@ from glomerulus.io import FileStorage
 from datetime import datetime as dt
 
 
-class Article(object):
-    def __init__(self):
-        self.url = None
-        self.scrapdate = None
-        self.pubdate = None
-        self.content = None
-        self.comments = None
-        self.isFake = None
-
-    def save_CSV(self):
-        fs = FileStorage()
-        row = list(self.__dict__.values())
-        fs.save_csv(row, 'articles.csv')
+# class Article(object):
+#     def __init__(self):
+#         self.url = None
+#         self.scrapdate = None
+#         self.pubdate = None
+#         self.content = None
+#         self.comments = None
+#         self.isFake = None
+#
+#     def save_CSV(self):
+#         fs = FileStorage()
+#         row = list(self.__dict__.values())
+#         fs.save_csv(row, 'articles.csv')
 
 
 
@@ -31,9 +31,9 @@ class LinksSpider(scrapy.Spider):
     ]
 
     def start_requests(self):
-        fs = FileStorage()
-        header = list(Article().__dict__.keys())
-        fs.save_csv(header, 'articles.csv', 'w')
+        # fs = FileStorage()
+        # header = list(Article().__dict__.keys())
+        # fs.save_csv(header, 'articles.csv', 'w')
         # Read URLs from a file and search only these URLs...
         requests = []
         for url in FileStorage().get_data(LINKS_PATH):
@@ -46,14 +46,16 @@ class LinksSpider(scrapy.Spider):
         return requests
 
     def parse(self, response):
-        article = Article()
-        article.url = response.url
-        article.scrapdate = dt.now()
-        article.content, article.comments = self.get_content(response)
-        article.isFake = 'TODO'
-        article.pubdate = 'TODO'
-        article.save_CSV()
-        return article
+        content, comments = self.get_content(response)
+        document = {
+            'url': response.url,
+            'scrap_date': dt.now(),
+            'content': content,
+            'comments': comments,
+            'is_fake': "TODO",
+            'pub_date': 'TODO'
+        }
+        return document
 
 
     def get_content(self, response):
