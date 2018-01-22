@@ -2,8 +2,25 @@
 import scrapy
 from collections import OrderedDict
 
-from  glomerulus.config import LINKS_PATH
-from  glomerulus.io import FileStorage
+from glomerulus.config import LINKS_PATH
+from glomerulus.io import FileStorage
+from datetime import datetime as dt
+
+
+# class Article(object):
+#     def __init__(self):
+#         self.url = None
+#         self.scrapdate = None
+#         self.pubdate = None
+#         self.content = None
+#         self.comments = None
+#         self.isFake = None
+#
+#     def save_CSV(self):
+#         fs = FileStorage()
+#         row = list(self.__dict__.values())
+#         fs.save_csv(row, 'articles.csv')
+
 
 
 class LinksSpider(scrapy.Spider):
@@ -14,6 +31,9 @@ class LinksSpider(scrapy.Spider):
     ]
 
     def start_requests(self):
+        # fs = FileStorage()
+        # header = list(Article().__dict__.keys())
+        # fs.save_csv(header, 'articles.csv', 'w')
         # Read URLs from a file and search only these URLs...
         requests = []
         for url in FileStorage().get_data(LINKS_PATH):
@@ -25,30 +45,17 @@ class LinksSpider(scrapy.Spider):
                 requests.append(scrapy.Request(url))
         return requests
 
-
-
     def parse(self, response):
-
-        article_content, article_comments = self.get_content(response)
-
-        data = OrderedDict([
-            ('url',response.url),
-            ('is_fake',"TODO"),
-            ('publish_date', "TODO"),
-            ('content', article_content),
-            ('comments', article_comments)]
-        )
-        self.save_readable_article_data(data)
-        return data
-
-    def save_readable_article_data(self, data):
-        # Should be somewhere else? TODO better?
-        str = ""
-        for key, val in data.items():
-            str += (key + ": " + val)
-            str += "\n"
-        str += "\n"
-        FileStorage().save_data('readable-article-data', str, flag='a')
+        content, comments = self.get_content(response)
+        document = {
+            'url': response.url,
+            'scrap_date': dt.now(),
+            'content': content,
+            'comments': comments,
+            'is_fake': "TODO",
+            'pub_date': 'TODO'
+        }
+        return document
 
 
     def get_content(self, response):
@@ -119,7 +126,7 @@ class LinksSpider(scrapy.Spider):
         all_divs_texts = main_container.css('div::text').extract()
         for div_text in all_divs_texts:
             if len(div_text) > 25:
-                print(div_text)
+                # print(div_text)
                 content.append(div_text)
         return content
 
