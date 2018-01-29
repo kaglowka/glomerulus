@@ -30,11 +30,12 @@ class LinksSpider(scrapy.Spider):
     def parse(self, response):
 
         article_content, article_comments = self.get_content(response)
+        publish_date = self.extract_publish_date(response)
 
         data = OrderedDict([
             ('url',response.url),
             ('is_fake',"TODO"),
-            ('publish_date', "TODO"),
+            ('publish_date', publish_date),
             ('content', article_content),
             ('comments', article_comments)]
         )
@@ -93,7 +94,35 @@ class LinksSpider(scrapy.Spider):
         if len(candidate) > 0:
             return candidate[0]
 
+        candidate = response.css('section[class~="article"]')
+        if len(candidate) > 0:
+            return candidate[0]
+
+        candidate = response.css('div[class~="article"]')
+        if len(candidate) > 0:
+            return candidate[0]
+
+        candidate = response.css('section[id~="article"]')
+        if len(candidate) > 0:
+            return candidate[0]
+
+        candidate = response.css('div[id~="article"]')
+        if len(candidate) > 0:
+            return candidate[0]
+
         candidate = response.css('div[class*="article"]')
+        if len(candidate) > 0:
+            return candidate[0]
+
+        candidate = response.css('div[class~="post"]')
+        if len(candidate) > 0:
+            return candidate[0]
+
+        candidate = response.css('div[id~="post"]')
+        if len(candidate) > 0:
+            return candidate[0]
+
+        candidate = response.css('div[class*="post"]')
         if len(candidate) > 0:
             return candidate[0]
 
@@ -102,6 +131,7 @@ class LinksSpider(scrapy.Spider):
             return candidate[0]
 
         candidate = response.css('body')[0]
+
         return candidate
 
 
@@ -114,7 +144,17 @@ class LinksSpider(scrapy.Spider):
         for p_text in all_p_texts:
             if len(p_text) > 1:
                 content.append(p_text)
+                print("p: " + p_text)
 
+        print("all_p_texts", all_p_texts)
+
+        # all_p_texts_xpath = main_container.xpath('//p//text()').extract()
+        # for p_text in all_p_texts_xpath:
+        #     if len(p_text) > 1:
+        #         content.append(p_text)
+        #         print("p: " + p_text)
+        #
+        # print("all_p_texts_xpath", all_p_texts_xpath)
 
         # Get texts longer than 25 chars form all divs inside main container
         all_divs_texts = main_container.css('div::text').extract()
@@ -122,14 +162,41 @@ class LinksSpider(scrapy.Spider):
             if len(div_text) > 25:
                 div_text = div_text.strip() #remove whitespaces
                 content.append(div_text)
+                print("div: " + div_text)
+
+        # all_divs_texts_xpath = main_container.xpath('//div//text()').extract()
+        # for div_text in all_divs_texts_xpath:
+        #     if len(div_text) > 25:
+        #         div_text = div_text.strip() #remove whitespaces
+        #         content.append(div_text)
+        #         print("div: " + div_text)
+
+        print("CONTENT", content)
         return content
 
 
 
     def extract_comments_inside_main(self, main_container):
-
+        comments = []
         # Get all p inside any element whose id attribute contains 'comment'
-        return main_container.css('*[id*="comments"] p::text').extract()
+        all_p_id_comments = main_container.css('*[id*="comment"] p::text').extract()
+        for comment in all_p_id_comments:
+            comment = comment.strip()
+            comments.append(comment)
+        all_p_class_comments = main_container.css('*[class*="comment"] p::text').extract()
+        for comment in all_p_class_comments:
+            comment = comment.strip()
+            comments.append(comment)
+
+        all_div_id_comments = main_container.css('*[id*="comment"] div::text').extract()
+        for comment in all_div_id_comments:
+            comment = comment.strip()
+            comments.append(comment)
+        all_div_class_comments = main_container.css('*[class*="comment"] div::text').extract()
+        for comment in all_div_class_comments:
+            comment = comment.strip()
+            comments.append(comment)
+        return comments
 
 
     def remove_elements(self, all_elements, trash_elements):
@@ -141,3 +208,25 @@ class LinksSpider(scrapy.Spider):
             if not is_trash:
                 return_elements.append(el)
         return return_elements
+
+
+    # DATE EXTRACTION
+
+    def extract_publish_date(self, response):
+        # date = response.css('time::text').extract_first()
+        # all_dates = response.css('time::text').extract()
+        # if date is not None:
+        #     return date
+
+        # TODO: first candidate datetime value
+
+        candidate = response.css('time::text').extract()
+        if len(candidate) > 0:
+            return candidate[0]
+
+        candidate = response.css('*[class="data"]::text').extract()
+        if len(candidate) > 0:
+            return candidate[0]
+
+
+        return "BRAK DATY"
