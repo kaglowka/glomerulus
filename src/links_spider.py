@@ -30,12 +30,14 @@ class LinksSpider(scrapy.Spider):
     def parse(self, response):
 
         article_content, article_comments = self.get_content(response)
+        article_title = self.extract_article_title(response)
         publish_date = self.extract_publish_date(response)
 
         data = OrderedDict([
             ('url',response.url),
             ('is_fake',"TODO"),
             ('publish_date', publish_date),
+            ('title', article_title),
             ('content', article_content),
             ('comments', article_comments)]
         )
@@ -194,6 +196,23 @@ class LinksSpider(scrapy.Spider):
         return return_elements
 
 
+
+    # ARTICLE TITLE EXTRACTION
+
+    candidate_article_title = [
+        'h1[class*="title"]::text',
+        'h1[id*="title"]::text'
+        'h1::text',
+    ]
+
+    def extract_article_title(self, response):
+
+        for selector in self.candidate_article_title:
+            candidates = response.css(selector).extract()
+            if len(candidates) > 0:
+                return candidates[0].strip()
+
+        return 'BRAK TYTUŁU'
 
 
     # DATE EXTRACTION
