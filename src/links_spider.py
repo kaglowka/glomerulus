@@ -200,9 +200,12 @@ class LinksSpider(scrapy.Spider):
     # ARTICLE TITLE EXTRACTION
 
     candidate_article_title = [
-        'h1[class*="title"]::text',
-        'h1[id*="title"]::text'
-        'h1::text',
+        'h1[class*="title"] *::text',
+        'h1[id*="title"] *::text',
+        'h1 *::text',
+        'h2[class*="title"] *::text',
+        'h2[id*="title"] *::text',
+        'h2 *::text',
     ]
 
     def extract_article_title(self, response):
