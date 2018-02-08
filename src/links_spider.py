@@ -126,7 +126,6 @@ class LinksSpider(scrapy.Spider):
         all_divs_texts = main_container.css('div::text').extract()
         for div_text in all_divs_texts:
             if len(div_text) > 25:
-                # print(div_text)
                 content.append(div_text)
         return content
 
