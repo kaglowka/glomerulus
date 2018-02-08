@@ -55,7 +55,6 @@ class LinksSpider(scrapy.Spider):
             'is_fake': "TODO",
             'pub_date': 'TODO'
         }
-        return document
 
 
     def get_content(self, response):
@@ -63,10 +62,10 @@ class LinksSpider(scrapy.Spider):
         # Indentify main container
         article = self.extract_main_container(response)
 
-        # Get all p inside main container
+        # Get all paragraphs inside main container
         all_pars = self.extract_main_content(article)
 
-        # Extract all p likely to be comments inside main container
+        # Extract all paragraphs likely to be comments inside main container
         comment_pars = self.extract_comments_inside_main(article)
 
         # Remove comments from main content
@@ -83,58 +82,109 @@ class LinksSpider(scrapy.Spider):
         for par in comment_pars:
             comments_text += par
 
-
         return [content_text, comments_text]
 
 
 
 
-    def extract_main_container(self, response):
+    # MAIN CONTAINER EXTRACTION
 
-        # 1st rule -- get 1st article element
-        # 2nd rule -- get 1st div whose class attribute value contains "article"
-        # 3rd rule -- get 1st div whose id attribute value contains "post" (for blogs)
+    # the list below defines rules for identifying main container and order in which they should be applied
+
+    candidate_main_container = [
+
+        'article',
+
+        # class contains word 'article'
+        'section[class~="article"]',
+        'div[class~="article"]',
+
+        # id contains word 'article'
+        'section[id~="article"]',
+        'div[id~="article"]',
+
+        # class contains substring 'article'
+        'div[class*="article"]',
+
+        # id contains substring 'article'
+        'div[id*="article"]',
+
+        # identifying posts (for example on blogs)
+        'div[class~="post"]',
+        'div[id~="post"]',
+        'div[class*="post"]',
+        'div[id*="post"]',
+
         # backup -- get body element
+        'body'
+    ]
 
-        candidate = response.css('article')
-        if len(candidate) > 0:
-            return candidate[0]
-
-        candidate = response.css('div[class*="article"]')
-        if len(candidate) > 0:
-            return candidate[0]
-
-        candidate = response.css('div[id*="post"]')
-        if len(candidate) > 0:
-            return candidate[0]
-
-        candidate = response.css('body')[0]
-        return candidate
+    def extract_main_container(self, response):
+        for selector in self.candidate_main_container:
+            candidate = response.css(selector)
+            if len(candidate) > 0:
+                return candidate[0]
 
 
+
+
+    # MAIN CONTENT EXTRACTION
 
     def extract_main_content(self, main_container):
         content = []
 
-        # Get text form all p inside main container
-        all_p = main_container.xpath('.//p')
-        for p in all_p:
-            if p.css('::text').extract_first() is not None:
-                content.append(p.css('::text').extract_first())
+        # Get text form every p (and its every child) inside main container
+        all_p_texts = main_container.css('p *::text').extract()
+        for p_text in all_p_texts:
+            if len(p_text) > 1:
+                content.append(p_text)
 
         # Get texts longer than 25 chars form all divs inside main container
         all_divs_texts = main_container.css('div::text').extract()
         for div_text in all_divs_texts:
             if len(div_text) > 25:
+                div_text = div_text.strip() #remove whitespaces
                 content.append(div_text)
+
+        # all_p_texts_xpath = main_container.xpath('//p//text()').extract()
+        # for p_text in all_p_texts_xpath:
+        #     if len(p_text) > 1:
+        #         content.append(p_text)
+        #
+
+        # all_divs_texts_xpath = main_container.xpath('//div//text()').extract()
+        # for div_text in all_divs_texts_xpath:
+        #     if len(div_text) > 25:
+        #         div_text = div_text.strip() #remove whitespaces
+        #         content.append(div_text)
+
         return content
 
 
 
+    # COMMENTS EXTRACTION
+
+    # the list below defines rules for identifying comments
+
+    candidate_comments = [
+        '*[class*="comment"] p::text',
+        '*[id*="comment"] p::text',
+        '*[class*="comment"] div::text',
+        '*[id*="comment"] div::text',
+    ]
+
     def extract_comments_inside_main(self, main_container):
 
-        # Get all p inside any element whose id attribute contains 'comment'
-        return main_container.css('*[id*="comments"] p::text').extract()
+        comments = []
+
+        for selector in self.candidate_comments:
+            result = main_container.css(selector).extract()
+            for comment in result:
+                comment = comment.strip()
+                comments.append(comment)
+
+        return comments
+
 
 
     def remove_elements(self, all_elements, trash_elements):
@@ -146,3 +196,48 @@ class LinksSpider(scrapy.Spider):
             if not is_trash:
                 return_elements.append(el)
         return return_elements
+
+
+
+    # ARTICLE TITLE EXTRACTION
+
+    candidate_article_title = [
+        'h1[class*="title"] *::text',
+        'h1[id*="title"] *::text',
+        'h1 *::text',
+        'h2[class*="title"] *::text',
+        'h2[id*="title"] *::text',
+        'h2 *::text',
+    ]
+
+    def extract_article_title(self, response):
+
+        for selector in self.candidate_article_title:
+            candidates = response.css(selector).extract()
+            if len(candidates) > 0:
+                return candidates[0].strip()
+
+        return 'BRAK TYTUŁU'
+
+
+    # DATE EXTRACTION
+
+    candidate_date = [
+        'time::text',
+        '*[class="data"]::text',
+    ]
+
+    def extract_publish_date(self, response):
+        # date = response.css('time::text').extract_first()
+        # all_dates = response.css('time::text').extract()
+        # if date is not None:
+        #     return date
+
+        # TODO: first candidate datetime value
+
+        for selector in self.candidate_date:
+            candidate = response.css(selector).extract()
+            if len(candidate) > 0:
+                return candidate[0]
+
+        return "BRAK DATY"

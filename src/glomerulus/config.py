@@ -1,3 +1,3 @@
 
 # Config data files
-LINKS_PATH = 'links.txt'
+LINKS_PATH = 'links'
